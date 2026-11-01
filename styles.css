@@ -30,6 +30,9 @@ h2 { margin: 0; font-size: 1.55rem; }
 label { display: block; font-weight: 700; line-height: 1.5; }
 input { width: 100%; margin-top: .6rem; padding: .8rem .9rem; border: 1px solid #aebdc1; border-radius: .45rem; color: inherit; background: white; font: inherit; }
 input:focus { outline: 3px solid #9bd6d5; border-color: var(--accent); }
+.exercise-picker { margin-top: 2rem; }
+.exercise-picker select { width: 100%; margin-top: .6rem; padding: .8rem; border: 1px solid #aebdc1; border-radius: .45rem; background: var(--paper); color: var(--ink); font: inherit; }
+.exercise-picker select:focus { outline: 3px solid #9bd6d5; }
 button { margin-top: .5rem; padding: .8rem 1.15rem; border: 0; border-radius: .45rem; color: white; background: var(--accent); font: inherit; font-weight: 800; cursor: pointer; }
 button:hover { background: var(--accent-dark); }
 button:disabled { cursor: wait; opacity: .65; }

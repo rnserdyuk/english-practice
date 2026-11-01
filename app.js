@@ -99,12 +99,37 @@ function renderExercise(exercise) {
 
 async function loadExercises() {
   try {
-    const response = await fetch(API_URL);
+    const response = await fetch(API_URL, { cache: 'no-store' });
     if (!response.ok) throw new Error("The exercise service is unavailable.");
     const exercises = await response.json();
     if (exercises && exercises.error) throw new Error(exercises.error);
     if (!Array.isArray(exercises) || exercises.length === 0) throw new Error("No published exercises are available.");
-    renderExercise(exercises[0]);
+    const picker = document.createElement('section');
+    picker.className = 'exercise-picker';
+    const label = document.createElement('label');
+    label.htmlFor = 'exercise-select';
+    label.textContent = `Choose an exercise (${exercises.length} available)`;
+    const select = document.createElement('select');
+    select.id = 'exercise-select';
+    exercises.forEach((exercise, index) => {
+      const option = document.createElement('option');
+      option.value = String(index);
+      option.textContent = exercise.title || exercise.id;
+      select.append(option);
+    });
+    let selectedIndex = 0;
+    select.addEventListener('change', () => {
+      const hasAnswers = Array.from(app.querySelectorAll('input')).some(input => input.value.trim());
+      if (hasAnswers && !window.confirm('Switch exercises? Answers on this page will be cleared.')) {
+        select.value = String(selectedIndex);
+        return;
+      }
+      selectedIndex = Number(select.value);
+      renderExercise(exercises[selectedIndex]);
+    });
+    picker.append(label, select);
+    app.before(picker);
+    renderExercise(exercises[selectedIndex]);
   } catch (error) {
     app.replaceChildren(message(error.message || "Could not load the exercises.", "error"));
   }
