@@ -1,6 +1,10 @@
 // This endpoint exposes published questions only. It must never return answer keys.
-const API_URL = "https://script.google.com/macros/s/AKfycbz5ktDIVQw1zbPiewx18M3AGOy_MpHw23zHCTquw0BKWUmhm1RAz292MDI62g7FWg/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxXBTnSlJGlbRc6CITOGu3gQol7FSrYpi2Y1CAkz9WAyW82QOtQ9NonsCIUEkrIvr0/exec";
 const app = document.querySelector("#app");
+const ANSWER_PATTERN = /^[A-Za-z0-9 .,?!'’“”"():;\-]+$/;
+const COOLDOWN_MS = 60000;
+let lastAttempt = 0;
+try { lastAttempt = Number(localStorage.getItem('english-last-attempt')) || 0; } catch {}
 
 function message(text, className = "") {
   const element = document.createElement("p");
@@ -32,11 +36,14 @@ function renderExercise(exercise) {
     input.name = question.id;
     input.autocomplete = "off";
     input.required = true;
+    input.maxLength = 500;
+    input.addEventListener('input', () => input.setCustomValidity(''));
     input.setAttribute("aria-label", question.prompt);
     label.append(input);
     group.append(label);
     form.append(group);
   });
+  form.append(message('Up to 500 characters per answer. Use English letters, numbers, spaces, and normal punctuation.', 'description'));
 
   const submit = document.createElement("button");
   submit.type = "submit";
@@ -47,6 +54,21 @@ function renderExercise(exercise) {
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
+    if (Date.now() - lastAttempt < COOLDOWN_MS) {
+      status.textContent = 'Please wait one minute between submission attempts.';
+      return;
+    }
+    for (const question of exercise.questions) {
+      const input = form.elements.namedItem(question.id);
+      const value = input.value.trim();
+      if (!value || !ANSWER_PATTERN.test(value)) {
+        input.setCustomValidity('Use English letters, numbers, spaces, and normal punctuation only.');
+        input.reportValidity();
+        return;
+      }
+    }
+    lastAttempt = Date.now();
+    try { localStorage.setItem('english-last-attempt', String(lastAttempt)); } catch {}
     submit.disabled = true;
     status.className = "status";
     status.textContent = "Sending your answers…";
@@ -62,12 +84,14 @@ function renderExercise(exercise) {
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({ exerciseId: exercise.id, answers })
       });
-      status.textContent = "Your answers were sent. Your teacher will review them.";
-      form.reset();
+      status.textContent = "Request sent. Your teacher must confirm it was saved. Please keep your answers until then.";
     } catch {
       status.className = "status error";
       status.textContent = "We could not send your answers. Please try again.";
       submit.disabled = false;
+    } finally {
+      const remaining = Math.max(0, COOLDOWN_MS - (Date.now() - lastAttempt));
+      setTimeout(() => { submit.disabled = false; }, remaining);
     }
   });
   app.append(form);
@@ -78,6 +102,7 @@ async function loadExercises() {
     const response = await fetch(API_URL);
     if (!response.ok) throw new Error("The exercise service is unavailable.");
     const exercises = await response.json();
+    if (exercises && exercises.error) throw new Error(exercises.error);
     if (!Array.isArray(exercises) || exercises.length === 0) throw new Error("No published exercises are available.");
     renderExercise(exercises[0]);
   } catch (error) {
