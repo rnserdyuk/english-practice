@@ -59,7 +59,7 @@ article h2 { font-size: 18px; }
 article h3 { font-size: 16px; }
 article :first-child { margin-top: 0; }
 form { contain: size; min-height: 0; overflow-y: auto; }
-.question { background: var(--canvas); border-radius: 8px; padding: 16px; margin-bottom: 10px; }
+.question { background: #f8f8f8; border-radius: 8px; padding: 16px; margin-bottom: 10px; }
 .picker-control select { margin: 0; }
 .question { margin-top: 0; }
 form button { width: 100%; }
